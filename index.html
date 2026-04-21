@@ -5,7 +5,7 @@
   <title>KuisKompanen – Zones</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet CSS (CORRECT) -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet/dist/leaflet.css"
@@ -25,19 +25,20 @@
 
 <div id="map"></div>
 
-<!-- Leaflet JS -->
+<!-- Leaflet JS (CORRECT) -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-  // Kaart initialiseren (centrum Aalst)
+  // Kaart initialiseren (Aalst)
   const map = L.map('map').setView([50.935, 4.038], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  // Data-URLs (JOUW ECHTE URLS)
+  // JOUW echte data-URL's
   const zonesUrl = 'zones_alles.geojson';
+
   const geclaimdUrl =
     'https://script.google.com/macros/s/AKfycbzppEk5LhqHSUPMAPeZF0jAsP6gGEbArWCab1PrqvhxHWKOclUyzLjfN9cdp-_b9MJS/exec';
 
@@ -46,3 +47,48 @@
 
   Promise.all([
     fetch(zonesUrl).then(res => res.json()),
+    fetch(geclaimdUrl).then(res => res.json())
+  ]).then(([zonesData, geclaimdeZones]) => {
+
+    L.geoJSON(zonesData, {
+      style: function (feature) {
+        const zoneCode = feature.properties.Zone; // juiste hoofdletter
+        const isGeclaimd = geclaimdeZones.includes(zoneCode);
+
+        return {
+          color: isGeclaimd ? '#5bb7bc' : '#6fa800',
+          fillColor: isGeclaimd ? '#87cdd2' : '#8fd400',
+          fillOpacity: 0.7,
+          weight: 2
+        };
+      },
+
+      onEachFeature: function (feature, layer) {
+        const zoneCode = feature.properties.Zone;
+        const isGeclaimd = geclaimdeZones.includes(zoneCode);
+
+        layer.bindTooltip(
+          isGeclaimd
+            ? `${zoneCode} – reeds geclaimd`
+            : `${zoneCode} – beschikbaar`
+        );
+
+        if (!isGeclaimd) {
+          layer.on('click', function () {
+            window.open(
+              formBaseUrl + encodeURIComponent(zoneCode),
+              '_blank'
+            );
+          });
+        }
+      }
+    }).addTo(map);
+
+  }).catch(err => {
+    console.error('Fout bij laden van de kaart:', err);
+  });
+</script>
+
+</body>
+</html>
+``
