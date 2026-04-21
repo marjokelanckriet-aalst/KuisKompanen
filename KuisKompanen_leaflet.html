@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <title>KuisKompanen – Zones</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  https://unpkg.com/leaflet/dist/leaflet.css
+  <style>
+    body { margin: 0; }
+    #map { height: 100vh; width: 100%; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+https://unpkg.com/leaflet/dist/leaflet.js
+
+<script>
+  const map = L.map('map').setView([50.935, 4.038], 13);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+
+  // URLS
+  const zonesUrl = 'zones_alles.geojson';
+  const geclaimdUrl = 'https://script.google.com/macros/s/JOUW_SCRIPT_ID/exec';
+
+  Promise.all([
+    fetch(zonesUrl).then(res => res.json()),
+    fetch(geclaimdUrl).then(res => res.json())
+  ]).then(([zonesData, geclaimdeZones]) => {
+
+    L.geoJSON(zonesData, {
+      style: function(feature) {
+        const isGeclaimd = geclaimdeZones.includes(feature.properties.ZONE_ID);
+        return {
+          color: isGeclaimd ? '#003C8F' : '#1B5E20',
+          fillColor: isGeclaimd ? '#64B5F6' : '#81C784',
+          fillOpacity: 0.6,
+          weight: 2
+        };
+      },
+      onEachFeature: function(feature, layer) {
+        const zoneID = feature.properties.ZONE_ID;
+        const isGeclaimd = geclaimdeZones.includes(zoneID);
+
+        layer.bindTooltip(
+          isGeclaimd
+            ? `${zoneID} – reeds bezet`
+            : `${zoneID} – beschikbaar`
+        );
+
+        if (!isGeclaimd) {
+          layer.on('click', function() {
+            const formUrl =
+              'https://docs.google.com/forms/d/e/FORM_ID/viewform?usp=pp_url&entry.123456789=';
+            window.open(formUrl + encodeURIComponent(zoneID), '_blank');
+          });
+        }
+      }
+    }).addTo(map);
+
+  });
+</script>
+
+</body>
+</html>
+``
