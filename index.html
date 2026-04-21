@@ -1,30 +1,33 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <title>KuisKompanen – Zones</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  https://unpkg.com/leaflet/dist/leaflet.css
-  <style>
-    body { margin: 0; }
-    #map { height: 100vh; width: 100%; }
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+     }
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
 
 <div id="map"></div>
 
-https://unpkg.com/leaflet/dist/leaflet.js
-
-<script>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js// Kaart initialiseren (Aalst)
   const map = L.map('map').setView([50.935, 4.038], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  // URLS
   const zonesUrl = 'zones_alles.geojson';
   const geclaimdUrl = 'https://script.google.com/macros/s/AKfycbzppEk5LhqHSUPMAPeZF0jAsP6gGEbArWCab1PrqvhxHWKOclUyzLjfN9cdp-_b9MJS/exec';
 
@@ -35,29 +38,31 @@ https://unpkg.com/leaflet/dist/leaflet.js
 
     L.geoJSON(zonesData, {
       style: function(feature) {
-        const isGeclaimd = geclaimdeZones.includes(feature.properties.ZONE_ID);
+        const zoneCode = feature.properties.zone;
+        const isGeclaimd = geclaimdeZones.includes(zoneCode);
+
         return {
-          color: isGeclaimd ? '#003C8F' : '#1B5E20',
-          fillColor: isGeclaimd ? '#64B5F6' : '#81C784',
-          fillOpacity: 0.6,
+          color: isGeclaimd ? '#5bb7bc' : '#6fa800',
+          fillColor: isGeclaimd ? '#87cdd2' : '#8fd400',
+          fillOpacity: 0.7,
           weight: 2
         };
       },
       onEachFeature: function(feature, layer) {
-        const zoneID = feature.properties.ZONE_ID;
-        const isGeclaimd = geclaimdeZones.includes(zoneID);
+        const zoneCode = feature.properties.zone;
+        const isGeclaimd = geclaimdeZones.includes(zoneCode);
 
         layer.bindTooltip(
           isGeclaimd
-            ? `${zoneID} – reeds bezet`
-            : `${zoneID} – beschikbaar`
+            ? `${zoneCode} – reeds geclaimd`
+            : `${zoneCode} – beschikbaar`
         );
 
         if (!isGeclaimd) {
-          layer.on('click', function() {
+          layer.on('click', function () {
             const formUrl =
               'https://docs.google.com/forms/d/e/1FAIpQLSdoXSSUOrJJgVrdDqeDvl5Iik8qWwsDibbRAoJD_1yNgd0jiQ/viewform?usp=pp_url&entry.1335095716=ZO+001';
-            window.open(formUrl + encodeURIComponent(zoneID), '_blank');
+            window.open(formUrl + encodeURIComponent(zoneCode), '_blank');
           });
         }
       }
@@ -68,4 +73,3 @@ https://unpkg.com/leaflet/dist/leaflet.js
 
 </body>
 </html>
-``
