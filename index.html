@@ -5,10 +5,12 @@
   <title>KuisKompanen – Zones</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet/dist    margin: 0;
+  <!-- ✅ Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+
+  <style>
+    body {
+      margin: 0;
       font-family: Arial, sans-serif;
     }
 
@@ -17,54 +19,42 @@
       width: 100%;
     }
 
-    /* === Laadmelding === */
-    #loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(255, 255, 255, 0.85);
-      z-index: 9999;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .loading-box {
-      background: #ffffff;
-      padding: 20px 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-      text-align: center;
-      color: #333;
-      font-size: 16px;
+    /* Altijd zichtbare statusbanner */
+    #status-banner {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,0.95);
+      padding: 10px 16px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      z-index: 1000;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
-<!-- Tijdelijke laadmelding -->
-<div id="loading-overlay">
-  <div class="loading-box">
-    <strong>Zones worden geladen…</strong><br>
-    Even geduld, we halen de beschikbare opruimzones op.
-  </div>
-</div>
-
 <div id="map"></div>
 
-<!-- Leaflet JS -->
+<div id="status-banner">
+  Zones worden geladen…
+</div>
+
+<!-- ✅ Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-  // Kaart initialiseren (Aalst)
+  const statusBanner = document.getElementById('status-banner');
+
   const map = L.map('map').setView([50.935, 4.038], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap'
   }).addTo(map);
 
-  // Data-URL's
   const zonesUrl = 'zones_alles.geojson';
-
   const geclaimdUrl =
     'https://script.google.com/macros/s/AKfycbzppEk5LhqHSUPMAPeZF0jAsP6gGEbArWCab1PrqvhxHWKOclUyzLjfN9cdp-_b9MJS/exec';
 
@@ -72,16 +62,24 @@
     'https://docs.google.com/forms/d/e/1FAIpQLSdoXSSUOrJJgVrdDqeDvl5Iik8qWwsDibbRAoJD_1yNgd0jiQ/viewform?usp=pp_url&entry.1335095716=';
 
   Promise.all([
-    fetch(zonesUrl).then(res => res.json()),
-    fetch(geclaimdUrl).then(res => res.json())
+    fetch(zonesUrl),
+    fetch(geclaimdUrl)
   ])
+  .then(responses => {
+    // ✅ Detecteer geblokkeerde fetch
+    responses.forEach(r => {
+      if (!r.ok) {
+        throw new Error('Externe data geblokkeerd');
+      }
+    });
+    return Promise.all(responses.map(r => r.json()));
+  })
   .then(([zonesData, geclaimdeZones]) => {
 
     L.geoJSON(zonesData, {
-      style: function(feature) {
-        const zoneCode = feature.properties.Zone; // hoofdletter Z
+      style: feature => {
+        const zoneCode = feature.properties.Zone;
         const isGeclaimd = geclaimdeZones.includes(zoneCode);
-
         return {
           color: isGeclaimd ? '#5bb7bc' : '#6fa800',
           fillColor: isGeclaimd ? '#87cdd2' : '#8fd400',
@@ -89,19 +87,10 @@
           weight: 2
         };
       },
-
-      onEachFeature: function(feature, layer) {
+      onEachFeature: (feature, layer) => {
         const zoneCode = feature.properties.Zone;
-        const isGeclaimd = geclaimdeZones.includes(zoneCode);
-
-        layer.bindTooltip(
-          isGeclaimd
-            ? `${zoneCode} – reeds geclaimd`
-            : `${zoneCode} – beschikbaar`
-        );
-
-        if (!isGeclaimd) {
-          layer.on('click', function () {
+        if (!geclaimdeZones.includes(zoneCode)) {
+          layer.on('click', () => {
             window.open(
               formBaseUrl + encodeURIComponent(zoneCode),
               '_blank'
@@ -111,13 +100,13 @@
       }
     }).addTo(map);
 
-    // ✅ Laadmelding verbergen zodra alles geladen is
-    document.getElementById('loading-overlay').style.display = 'none';
+    statusBanner.style.display = 'none';
   })
   .catch(err => {
-    console.error('Fout bij laden van kaartlagen:', err);
-    document.querySelector('.loading-box').innerHTML =
-      '<strong>Zones tijdelijk niet beschikbaar</strong><br>Probeer het straks opnieuw.';
+    console.error(err);
+    statusBanner.innerHTML =
+      '<strong>Opruimzones tijdelijk niet zichtbaar</strong><br>' +
+      'De kaart kan geen externe gegevens laden in deze browser.';
   });
 </script>
 
