@@ -22,7 +22,7 @@
       width: 100%;
     }
 
-    /* Vaste statusmelding */
+    /* Statusmelding */
     #status-banner {
       position: absolute;
       top: 10px;
@@ -34,6 +34,8 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
       z-index: 1000;
       font-size: 14px;
+      line-height: 1.4;
+      text-align: center;
     }
   </style>
 </head>
@@ -42,7 +44,8 @@
 <div id="map"></div>
 
 <div id="status-banner">
-  Zones worden geladen…
+  <strong>Zones worden geladen</strong><br>
+  Duurt dit lang? Probeer een andere browser, bijvoorbeeld Edge.
 </div>
 
 <!-- Leaflet JS -->
@@ -51,57 +54,6 @@
 <script>
   const statusBanner = document.getElementById('status-banner');
 
+  // Kaart initialiseren
   const map = L.map('map').setView([50.935, 4.038], 13);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap'
-  }).addTo(map);
-
-  const zonesUrl = 'zones_alles.geojson';
-  const geclaimdUrl =
-    'https://script.google.com/macros/s/AKfycbzppEk5LhqHSUPMAPeZF0jAsP6gGEbArWCab1PrqvhxHWKOclUyzLjfN9cdp-_b9MJS/exec';
-
-  const formBaseUrl =
-    'https://docs.google.com/forms/d/e/1FAIpQLSdoXSSUOrJJgVrdDqeDvl5Iik8qWwsDibbRAoJD_1yNgd0jiQ/viewform?usp=pp_url&entry.1335095716=';
-
-  Promise.all([
-    fetch(zonesUrl).then(r => r.json()),
-    fetch(geclaimdUrl).then(r => r.json())
-  ])
-  .then(([zonesData, geclaimdeZones]) => {
-
-    L.geoJSON(zonesData, {
-      style: feature => {
-        const zoneCode = feature.properties.Zone;
-        const isGeclaimd = geclaimdeZones.includes(zoneCode);
-        return {
-          color: isGeclaimd ? '#5bb7bc' : '#6fa800',
-          fillColor: isGeclaimd ? '#87cdd2' : '#8fd400',
-          fillOpacity: 0.7,
-          weight: 2
-        };
-      },
-      onEachFeature: (feature, layer) => {
-        const zoneCode = feature.properties.Zone;
-        if (!geclaimdeZones.includes(zoneCode)) {
-          layer.on('click', () => {
-            window.open(
-              formBaseUrl + encodeURIComponent(zoneCode),
-              '_blank'
-            );
-          });
-        }
-      }
-    }).addTo(map);
-
-    // ✅ Zones zijn geladen → banner weg
-    statusBanner.style.display = 'none';
-  })
-  .catch(err => {
-    // ❌ Bij fout: banner blijft gewoon staan
-    console.warn('Zones konden niet geladen worden:', err);
-  });
-</script>
-
-</body>
-</html>
