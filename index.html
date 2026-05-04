@@ -5,8 +5,11 @@
   <title>KuisKompanen – Zones</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- ✅ Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <!-- Leaflet CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
 
   <style>
     body {
@@ -19,13 +22,13 @@
       width: 100%;
     }
 
-    /* Altijd zichtbare statusbanner */
+    /* Vaste statusmelding */
     #status-banner {
       position: absolute;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255,255,255,0.95);
+      background: rgba(255, 255, 255, 0.95);
       padding: 10px 16px;
       border-radius: 6px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
@@ -42,7 +45,7 @@
   Zones worden geladen…
 </div>
 
-<!-- ✅ Leaflet JS -->
+<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
@@ -62,18 +65,9 @@
     'https://docs.google.com/forms/d/e/1FAIpQLSdoXSSUOrJJgVrdDqeDvl5Iik8qWwsDibbRAoJD_1yNgd0jiQ/viewform?usp=pp_url&entry.1335095716=';
 
   Promise.all([
-    fetch(zonesUrl),
-    fetch(geclaimdUrl)
+    fetch(zonesUrl).then(r => r.json()),
+    fetch(geclaimdUrl).then(r => r.json())
   ])
-  .then(responses => {
-    // ✅ Detecteer geblokkeerde fetch
-    responses.forEach(r => {
-      if (!r.ok) {
-        throw new Error('Externe data geblokkeerd');
-      }
-    });
-    return Promise.all(responses.map(r => r.json()));
-  })
   .then(([zonesData, geclaimdeZones]) => {
 
     L.geoJSON(zonesData, {
@@ -100,13 +94,12 @@
       }
     }).addTo(map);
 
+    // ✅ Zones zijn geladen → banner weg
     statusBanner.style.display = 'none';
   })
   .catch(err => {
-    console.error(err);
-    statusBanner.innerHTML =
-      '<strong>Opruimzones tijdelijk niet zichtbaar</strong><br>' +
-      'De kaart kan geen externe gegevens laden in deze browser.';
+    // ❌ Bij fout: banner blijft gewoon staan
+    console.warn('Zones konden niet geladen worden:', err);
   });
 </script>
 
