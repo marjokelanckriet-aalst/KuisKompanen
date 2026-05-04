@@ -2,35 +2,34 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8">
-  <title>KuisKompanen – Zones</title>
+  <title>KuisKompanen – Opruimzones</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
-  https://unpkg.com/leaflet/dist/leaflet.css
-
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
+  <!-- ✅ Leaflet correct geladen -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+       font-family: Arial, sans-serif;
     }
 
     #map {
-      height: 100vh;
+      height: 600px;
       width: 100%;
     }
 
-    /* Vaste statusmelding */
-    #status-banner {
+    /* Eenvoudige kadertekst */
+    #status-box {
       position: absolute;
-      top: 10px;
+      top: 12px;
       left: 50%;
       transform: translateX(-50%);
       background: rgba(255, 255, 255, 0.95);
       padding: 10px 16px;
       border-radius: 6px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      z-index: 1000;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
       font-size: 14px;
+      z-index: 1000;
+      text-align: center;
     }
   </style>
 </head>
@@ -38,16 +37,15 @@
 
 <div id="map"></div>
 
-<div id="status-banner">
-  Zones worden geladen…
+<div id="status-box">
+  <strong>Zones worden geladen</strong>
 </div>
 
-<!-- Leaflet JS -->
-https://unpkg.com/leaflet/dist/leaflet.js
+<!-- ✅ Leaflet correct geladen -->
+<script src="https://unpkg.com/leaflet/dist/leafpt>
+  const statusBox = document.getElementById('status-box');
 
-<script>
-  const statusBanner = document.getElementById('status-banner');
-
+  // Basiskaart: ALTIJD zichtbaar
   const map = L.map('map').setView([50.935, 4.038], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -71,6 +69,7 @@ https://unpkg.com/leaflet/dist/leaflet.js
       style: feature => {
         const zoneCode = feature.properties.Zone;
         const isGeclaimd = geclaimdeZones.includes(zoneCode);
+
         return {
           color: isGeclaimd ? '#5bb7bc' : '#6fa800',
           fillColor: isGeclaimd ? '#87cdd2' : '#8fd400',
@@ -80,6 +79,7 @@ https://unpkg.com/leaflet/dist/leaflet.js
       },
       onEachFeature: (feature, layer) => {
         const zoneCode = feature.properties.Zone;
+
         if (!geclaimdeZones.includes(zoneCode)) {
           layer.on('click', () => {
             window.open(
@@ -91,12 +91,13 @@ https://unpkg.com/leaflet/dist/leaflet.js
       }
     }).addTo(map);
 
-    // ✅ Zones zijn geladen → banner weg
-    statusBanner.style.display = 'none';
+    // ✅ Zones zichtbaar → kadertekst weg
+    statusBox.style.display = 'none';
   })
-  .catch(err => {
-    // ❌ Bij fout: banner blijft gewoon staan
-    console.warn('Zones konden niet geladen worden:', err);
+  .catch(() => {
+    // ❌ Bij problemen:
+    // kaart blijft zichtbaar
+    // kadertekst blijft gewoon staan
   });
 </script>
 
