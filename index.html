@@ -7,7 +7,6 @@
 
 <meta http-equiv="Cache-Control" content="public, max-age=86400">
 
-<!-- Leaflet CSS -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
 
 <style>
@@ -46,7 +45,6 @@ body {
 Duurt dit lang? Probeer een andere browser.
 </div>
 
-<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
@@ -54,15 +52,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const statusBox = document.getElementById('status-box');
 
-  // Kaart initialiseren
   const map = L.map('map').setView([50.935, 4.038], 13);
 
-  // Snellere onderlaag
   L.tileLayer(
     'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     {
-      attribution: '© OpenStreetMap, © CARTO',
-      maxZoom: 19
+      attribution: '© OpenStreetMap, © CARTO'
     }
   ).addTo(map);
 
@@ -76,30 +71,35 @@ document.addEventListener('DOMContentLoaded', function () {
 
   Promise.all([
     fetch(zonesUrl).then(r => r.json()),
-
-    fetch(geclaimdUrl)
-      .then(r => {
-        if (!r.ok) {
-          throw new Error('Fout bij laden geclaimde zones');
-        }
-        return r.json();
-      })
-      .catch(err => {
-        console.warn('Fallback: geclaimde zones niet geladen', err);
-        return []; // fallback = alles vrij
-      })
+    fetch(geclaimdUrl).then(r => r.json()).catch(() => [])
   ])
-  .then(([zonesData, geclaimdeZones]) => {
+  .then(([zonesData, geclaimdeData]) => {
 
-    console.log("Geclaimde zones:", geclaimdeZones);
+    console.log("RAW Google data:", geclaimdeData);
+
+    // ✅ HIER IS DE MAGIE → alles normaliseren
+    let geclaimdeZones = [];
+
+    if (Array.isArray(geclaimdeData)) {
+      if (typeof geclaimdeData[0] === "string") {
+        geclaimdeZones = geclaimdeData;
+      } else if (typeof geclaimdeData[0] === "object") {
+        geclaimdeZones = geclaimdeData.map(obj =>
+          obj.Zone || obj.zone || obj.ZONE || Object.values(obj)[0]
+        );
+      }
+    } else if (geclaimdeData && geclaimdeData.data) {
+      geclaimdeZones = geclaimdeData.data;
+    }
+
+    console.log("Geclaimde zones clean:", geclaimdeZones);
 
     L.geoJSON(zonesData, {
 
-      style: function(feature) {
-        const zoneCode = feature.properties.Zone;
+      style: feature => {
+        const zoneCode = feature.properties.Zone.trim();
 
-        // ✅ HIER zit de essentie: statusbepaling
-        const isGeclaimd = Array.isArray(geclaimdeZones) && geclaimdeZones.includes(zoneCode);
+        const isGeclaimd = geclaimdeZones.includes(zoneCode);
 
         return {
           color: isGeclaimd ? '#5bb7bc' : '#6fa800',
@@ -109,14 +109,13 @@ document.addEventListener('DOMContentLoaded', function () {
         };
       },
 
-      onEachFeature: function(feature, layer) {
-        const zoneCode = feature.properties.Zone;
+      onEachFeature: (feature, layer) => {
+        const zoneCode = feature.properties.Zone.trim();
 
-        const isGeclaimd = Array.isArray(geclaimdeZones) && geclaimdeZones.includes(zoneCode);
+        const isGeclaimd = geclaimdeZones.includes(zoneCode);
 
-        // ✅ klik alleen als zone vrij is
         if (!isGeclaimd) {
-          layer.on('click', function() {
+          layer.on('click', () => {
             window.open(
               formBaseUrl + encodeURIComponent(zoneCode),
               '_blank'
@@ -127,12 +126,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
     }).addTo(map);
 
-    // melding weg
     statusBox.style.display = 'none';
 
   })
   .catch(err => {
-    console.error('Fout bij laden kaart:', err);
+    console.error(err);
   });
 
 });
