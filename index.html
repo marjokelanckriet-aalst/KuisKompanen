@@ -46,7 +46,7 @@ body {
 Duurt dit lang? Probeer een andere browser.
 </div>
 
-<!-- ✅ CORRECTE Leaflet JS -->
+<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
@@ -54,9 +54,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const statusBox = document.getElementById('status-box');
 
+  // Kaart initialiseren
   const map = L.map('map').setView([50.935, 4.038], 13);
 
-  // Snellere kaartlaag
+  // Snellere onderlaag
   L.tileLayer(
     'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     {
@@ -84,16 +85,21 @@ document.addEventListener('DOMContentLoaded', function () {
         return r.json();
       })
       .catch(err => {
-        console.warn('Fallback: geclaimde zones niet beschikbaar', err);
-        return [];
+        console.warn('Fallback: geclaimde zones niet geladen', err);
+        return []; // fallback = alles vrij
       })
   ])
   .then(([zonesData, geclaimdeZones]) => {
 
+    console.log("Geclaimde zones:", geclaimdeZones);
+
     L.geoJSON(zonesData, {
-      style: feature => {
+
+      style: function(feature) {
         const zoneCode = feature.properties.Zone;
-        const isGeclaimd = geclaimdeZones.includes(zoneCode);
+
+        // ✅ HIER zit de essentie: statusbepaling
+        const isGeclaimd = Array.isArray(geclaimdeZones) && geclaimdeZones.includes(zoneCode);
 
         return {
           color: isGeclaimd ? '#5bb7bc' : '#6fa800',
@@ -103,11 +109,14 @@ document.addEventListener('DOMContentLoaded', function () {
         };
       },
 
-      onEachFeature: (feature, layer) => {
+      onEachFeature: function(feature, layer) {
         const zoneCode = feature.properties.Zone;
 
-        if (!geclaimdeZones.includes(zoneCode)) {
-          layer.on('click', () => {
+        const isGeclaimd = Array.isArray(geclaimdeZones) && geclaimdeZones.includes(zoneCode);
+
+        // ✅ klik alleen als zone vrij is
+        if (!isGeclaimd) {
+          layer.on('click', function() {
             window.open(
               formBaseUrl + encodeURIComponent(zoneCode),
               '_blank'
@@ -115,8 +124,10 @@ document.addEventListener('DOMContentLoaded', function () {
           });
         }
       }
+
     }).addTo(map);
 
+    // melding weg
     statusBox.style.display = 'none';
 
   })
