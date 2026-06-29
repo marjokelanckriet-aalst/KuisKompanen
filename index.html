@@ -1,68 +1,65 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-<meta charset="utf-8">
-<title>KuisKompanen – Kaart</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+  <title>KuisKompanen – Kaart</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<meta http-equiv="Cache-Control" content="public, max-age=86400">
+  <!-- ✅ Leaflet CSS CORRECT -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet/dist/leaflet.css"
+  />
 
-<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
 
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-}
+    #map {
+      height: 600px;
+      width: 100%;
+    }
 
-#map {
-  height: 600px;
-  width: 100%;
-}
-
-#status-box {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(255,255,255,0.95);
-  padding: 10px 16px;
-  border-radius: 6px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-  z-index: 1000;
-  font-size: 14px;
-  text-align: center;
-}
-</style>
+    #status-box {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px 16px;
+      border-radius: 6px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      z-index: 1000;
+      font-size: 14px;
+      text-align: center;
+    }
+  </style>
 </head>
-
 <body>
 
 <div id="map"></div>
 
 <div id="status-box">
-<strong>Zones worden geladen</strong><br>
-Duurt dit lang? Probeer een andere browser.
+  <strong>Zones worden geladen</strong><br>
+  Duurt dit lang? Probeer een andere browser.
 </div>
 
+<!-- ✅ Leaflet JS CORRECT -->
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-
   const statusBox = document.getElementById('status-box');
 
+  // ✅ Basiskaart – moet ALTIJD verschijnen
   const map = L.map('map').setView([50.935, 4.038], 13);
 
-  L.tileLayer(
-    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-    {
-      attribution: '© OpenStreetMap, © CARTO'
-    }
-  ).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
 
   const zonesUrl = 'zones_alles.geojson';
-
   const geclaimdUrl =
     'https://script.google.com/macros/s/AKfycbzppEk5LhqHSUPMAPeZF0jAsP6gGEbArWCab1PrqvhxHWKOclUyzLjfN9cdp-_b9MJS/exec';
 
@@ -71,34 +68,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
   Promise.all([
     fetch(zonesUrl).then(r => r.json()),
-    fetch(geclaimdUrl).then(r => r.json()).catch(() => [])
+    fetch(geclaimdUrl).then(r => r.json())
   ])
-  .then(([zonesData, geclaimdeData]) => {
-
-    console.log("RAW Google data:", geclaimdeData);
-
-    // ✅ HIER IS DE MAGIE → alles normaliseren
-    let geclaimdeZones = [];
-
-    if (Array.isArray(geclaimdeData)) {
-      if (typeof geclaimdeData[0] === "string") {
-        geclaimdeZones = geclaimdeData;
-      } else if (typeof geclaimdeData[0] === "object") {
-        geclaimdeZones = geclaimdeData.map(obj =>
-          obj.Zone || obj.zone || obj.ZONE || Object.values(obj)[0]
-        );
-      }
-    } else if (geclaimdeData && geclaimdeData.data) {
-      geclaimdeZones = geclaimdeData.data;
-    }
-
-    console.log("Geclaimde zones clean:", geclaimdeZones);
+  .then(([zonesData, geclaimdeZones]) => {
 
     L.geoJSON(zonesData, {
-
       style: feature => {
-        const zoneCode = feature.properties.Zone.trim();
-
+        const zoneCode = feature.properties.Zone;
         const isGeclaimd = geclaimdeZones.includes(zoneCode);
 
         return {
@@ -108,13 +84,9 @@ document.addEventListener('DOMContentLoaded', function () {
           weight: 2
         };
       },
-
       onEachFeature: (feature, layer) => {
-        const zoneCode = feature.properties.Zone.trim();
-
-        const isGeclaimd = geclaimdeZones.includes(zoneCode);
-
-        if (!isGeclaimd) {
+        const zoneCode = feature.properties.Zone;
+        if (!geclaimdeZones.includes(zoneCode)) {
           layer.on('click', () => {
             window.open(
               formBaseUrl + encodeURIComponent(zoneCode),
@@ -123,17 +95,14 @@ document.addEventListener('DOMContentLoaded', function () {
           });
         }
       }
-
     }).addTo(map);
 
+    // ✅ Zones zichtbaar → melding weg
     statusBox.style.display = 'none';
-
   })
-  .catch(err => {
-    console.error(err);
+  .catch(() => {
+    // Bij problemen blijf je gewoon de kaart + melding zien
   });
-
-});
 </script>
 
 </body>
