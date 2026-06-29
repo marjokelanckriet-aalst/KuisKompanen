@@ -5,10 +5,9 @@
 <title>KuisKompanen – Kaart</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- caching -->
 <meta http-equiv="Cache-Control" content="public, max-age=86400">
 
-<!-- Leaflet lokaal laden (pas pad aan indien nodig) -->
+<!-- Leaflet lokaal laden -->
 <link rel="stylesheet" href="leaflet/leaflet.css" />
 <script src="leaflet/leaflet.js"></script>
 
@@ -45,7 +44,7 @@ body {
 
 <div id="status-box">
 <strong>Zones worden geladen</strong><br>
-Duurt dit lang? Probeer een andere browser (bijv. Edge) of bekijk de statische kaart.
+Duurt dit lang? Probeer een andere browser.
 </div>
 
 <script>
@@ -53,10 +52,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   const statusBox = document.getElementById('status-box');
 
-  // ✅ kaart initialiseren
   const map = L.map('map').setView([50.935, 4.038], 13);
 
-  // ✅ snellere en stabielere onderlaag (i.p.v. OSM standard)
+  // Snellere en stabielere onderlaag
   L.tileLayer(
     'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
     {
@@ -73,7 +71,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const formBaseUrl =
     'https://docs.google.com/forms/d/e/1FAIpQLSdoXSSUOrJJgVrdDqeDvl5Iik8qWwsDibbRAoJD_1yNgd0jiQ/viewform?usp=pp_url&entry.1335095716=';
 
-  // ✅ robuuste data loading met fallback
   Promise.all([
     fetch(zonesUrl).then(r => r.json()),
 
@@ -86,7 +83,7 @@ document.addEventListener('DOMContentLoaded', function () {
       })
       .catch(err => {
         console.warn('Fallback: geclaimde zones niet beschikbaar', err);
-        return []; // 👉 alles blijft zichtbaar als "vrij"
+        return [];
       })
   ])
   .then(([zonesData, geclaimdeZones]) => {
@@ -118,7 +115,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }).addTo(map);
 
-    // ✅ alles geladen → status weg
     statusBox.style.display = 'none';
 
   })
